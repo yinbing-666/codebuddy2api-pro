@@ -1,0 +1,75 @@
+import type { Metadata } from 'next';
+import type { ReactNode } from 'react';
+import { AntdRegistry } from '@ant-design/nextjs-registry';
+import { NextIntlClientProvider } from 'next-intl';
+import { cookies, headers } from 'next/headers';
+
+import './globals.scss';
+import LobeUiProvider from '@/app/lobe-ui-provider';
+import LobeStyleRegistry from '@/app/lobe-style-registry';
+import {
+  parseThemeMode,
+  resolveThemeMode,
+  resolvedThemeCookieName,
+  themeCookieName,
+} from '@/lib/theme';
+import {
+  localeCookieName,
+  localePreferenceCookieName,
+  parseLocalePreference,
+  resolveAppLocale,
+  systemLocalePreference,
+} from '@/lib/i18n/routing';
+import { getMessages } from '@/lib/i18n/messages';
+
+export const metadata: Metadata = {
+  title: 'CodeBuddy2API',
+  description: 'Next.js admin shell for the CodeBuddy2API migration.',
+};
+
+const RootLayout = async ({
+  children,
+}: Readonly<{
+  children: ReactNode;
+}>) => {
+  const [cookieStore, headerStore] = await Promise.all([cookies(), headers()]);
+  const localePreference = parseLocalePreference(
+    cookieStore.get(localePreferenceCookieName)?.value ??
+      cookieStore.get(localeCookieName)?.value,
+  );
+  const locale = resolveAppLocale(
+    localePreference === systemLocalePreference
+      ? (headerStore.get('accept-language') ?? undefined)
+      : localePreference,
+  );
+  const messages = getMessages(locale);
+  const themePreference = parseThemeMode(
+    cookieStore.get(themeCookieName)?.value,
+  );
+  const theme = resolveThemeMode(
+    cookieStore.get(resolvedThemeCookieName)?.value,
+  );
+
+  return (
+    <html
+      className={theme === 'dark' ? 'dark' : undefined}
+      lang={locale}
+      // eslint-disable-next-line react/forbid-dom-props
+      style={{ colorScheme: theme }}
+    >
+      <body>
+        <AntdRegistry>
+          <LobeStyleRegistry>
+            <LobeUiProvider initialTheme={themePreference}>
+              <NextIntlClientProvider locale={locale} messages={messages}>
+                {children}
+              </NextIntlClientProvider>
+            </LobeUiProvider>
+          </LobeStyleRegistry>
+        </AntdRegistry>
+      </body>
+    </html>
+  );
+};
+
+export default RootLayout;

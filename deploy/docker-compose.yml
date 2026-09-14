@@ -1,0 +1,24 @@
+services:
+  codebuddy2api-pro:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: codebuddy2api-pro:latest
+    restart: unless-stopped
+    ports:
+      - '8001:8001'
+    environment:
+      HOSTNAME: 0.0.0.0
+      PORT: '8001'
+      NEXT_TELEMETRY_DISABLED: '1'
+      # Optional: route ALL upstream requests to CodeBuddy/WorkBuddy through an HTTP proxy.
+      # This is a generic proxy setting consumed by Bun's native fetch -- any HTTP proxy works
+      # (Webshare, Bright Data, a self-hosted relay, your own exit node, ...). Credentials are
+      # optional (user:pass@ prefix). Omit entirely if you connect directly.
+      # HTTPS_PROXY: 'http://user:pass@proxy.example.com:8080'
+    volumes:
+      - ../.codebuddy_data:/app/.codebuddy_data
+      - ../.codebuddy_creds:/app/.codebuddy_creds
+    env_file:
+      - path: ../.env
+        required: false
