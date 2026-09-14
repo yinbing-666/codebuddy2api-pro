@@ -1,7 +1,0 @@
-#!/usr/bin/env sh
-
-set -eu
-
-bun run lint
-bun run format:check
-bun run typecheck
