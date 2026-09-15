@@ -2657,6 +2657,42 @@ export const getModelsResponse = async (
   });
 };
 
+// ==================== Upstream error explanation (14017 etc.) ====================
+// Upstream CodeBuddy returns verbose English errors. Peek at the raw detail and
+// attach a short Chinese hint so Chinese users know exactly what to do.
+
+const UPSTREAM_ERROR_GUIDES: Array<{
+  code: number | null;
+  pattern: RegExp;
+  hint: string;
+}> = [
+  {
+    code: 14017,
+    pattern: /14017|trial version is not yet activated|activate.*trial/i,
+    hint: '该账号的免费试用尚未激活：请到 CodeBuddy 网页端登出当前账号后重新登录，激活试用后再调用 API',
+  },
+  {
+    code: 11128,
+    pattern: /11128|Illegal API invocation from an unapproved channel/i,
+    hint: '上游风控拦截了请求（疑似模板句指纹/异常来源）。本项目已内置脱敏，若仍出现请检查出口代理与请求内容',
+  },
+  {
+    code: 11133,
+    pattern: /11133|parameters rejected/i,
+    hint: '上游拒绝参数：常见原因是 max_tokens 过小，请保持 100+',
+  },
+];
+
+export const explainUpstreamError = (
+  detail: unknown,
+): string | null => {
+  if (typeof detail !== 'string' || detail.length === 0) return null;
+  for (const guide of UPSTREAM_ERROR_GUIDES) {
+    if (guide.pattern.test(detail)) return guide.hint;
+  }
+  return null;
+};
+
 export const proxyChatCompletions = async (
   request: NextRequest,
   body: ChatRequestBody,
@@ -2719,10 +2755,11 @@ export const proxyChatCompletions = async (
           url: upstreamUrl,
         });
         setDebugTraceError(debugTrace, detail);
+        const hint = explainUpstreamError(detail);
         return createErrorResponse(
           upstreamResponse.status,
           'Upstream CodeBuddy request failed',
-          detail,
+          hint ? `${detail}\n\n提示：${hint}` : detail,
         );
       }
 
@@ -2805,10 +2842,11 @@ export const proxyChatCompletions = async (
         url: upstreamUrl,
       });
       setDebugTraceError(debugTrace, detail);
+      const hint = explainUpstreamError(detail);
       return createErrorResponse(
         upstreamResponse.status,
         'Upstream CodeBuddy request failed',
-        detail,
+        hint ? `${detail}\n\n提示：${hint}` : detail,
       );
     }
 
@@ -2931,10 +2969,11 @@ export const proxyResponsesUpstream = async (
         url: upstreamUrl,
       });
       setDebugTraceError(debugTrace, detail);
+      const hint = explainUpstreamError(detail);
       return createErrorResponse(
         upstreamResponse.status,
         'Upstream CodeBuddy request failed',
-        detail,
+        hint ? `${detail}\n\n提示：${hint}` : detail,
       );
     }
 

@@ -76,6 +76,7 @@ Database backends require `CODEBUDDY_STORAGE_ENCRYPTION_KEY`. Set `DATABASE_URL`
 
 ## Known pitfalls (learned the hard way)
 
+- `400 14017 trial version is not yet activated` — the account's free trial is not activated yet. Log out and log back in on the CodeBuddy web dashboard once, then retry. This build appends a Chinese hint to such upstream errors automatically.
 - `400 11128 first message is not system prompt` — upstream blacklists fixed agent template sentences. This build sanitizes them automatically; you should NOT need to strip system prompts yourself.
 - `400 11133 parameters rejected` — keep `max_tokens` reasonable (e.g. 100+); tiny values get rejected.
 - `400 11101` — `tool_choice` must be a string; this build normalizes it.
