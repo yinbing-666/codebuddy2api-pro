@@ -687,6 +687,89 @@ const normalizeToolChoiceOut = (body: ChatRequestBody): ChatRequestBody => {
   return out;
 };
 
+// Sanitize a single string-valued field; returns [sanitized, changed].
+const sanitizeStringField = (value: unknown): [unknown, boolean] => {
+  if (typeof value === 'string') {
+    const sanitized = sanitizeText(value);
+    return [sanitized, sanitized !== value];
+  }
+  return [value, false];
+};
+
+// Sanitize message.tool_calls[].function.arguments / name. Returns a new array
+// when any element changed, otherwise null.
+const sanitizeToolCalls = (toolCalls: unknown[]): unknown[] | null => {
+  let newCalls: unknown[] | null = null;
+  for (let i = 0; i < toolCalls.length; i++) {
+    const call = toolCalls[i];
+    if (!call || typeof call !== 'object') continue;
+    const fn = (call as Record<string, unknown>).function;
+    if (!fn || typeof fn !== 'object') continue;
+    const fnObj = fn as Record<string, unknown>;
+    const [arguments_, argsChanged] = sanitizeStringField(fnObj.arguments);
+    const [name, nameChanged] = sanitizeStringField(fnObj.name);
+    if (argsChanged || nameChanged) {
+      if (newCalls === null) newCalls = [...toolCalls];
+      newCalls[i] = {
+        ...call,
+        function: {
+          ...fnObj,
+          ...(argsChanged ? { arguments: arguments_ } : {}),
+          ...(nameChanged ? { name } : {}),
+        },
+      };
+    }
+  }
+  return newCalls;
+};
+
+// Sanitize body-level tools[].function.description / name. Returns a new array
+// when any element changed, otherwise null.
+const sanitizeToolDefs = (tools: unknown[]): unknown[] | null => {
+  let newTools: unknown[] | null = null;
+  for (let i = 0; i < tools.length; i++) {
+    const tool = tools[i];
+    if (!tool || typeof tool !== 'object') continue;
+    const fn = (tool as Record<string, unknown>).function;
+    if (!fn || typeof fn !== 'object') continue;
+    const fnObj = fn as Record<string, unknown>;
+    const [description, descChanged] = sanitizeStringField(fnObj.description);
+    const [name, nameChanged] = sanitizeStringField(fnObj.name);
+    if (descChanged || nameChanged) {
+      if (newTools === null) newTools = [...tools];
+      newTools[i] = {
+        ...tool,
+        function: {
+          ...fnObj,
+          ...(descChanged ? { description } : {}),
+          ...(nameChanged ? { name } : {}),
+        },
+      };
+    }
+  }
+  return newTools;
+};
+
+// Sanitize string-valued reasoning fields on a message. Returns a partial
+// object (keys to overlay) and whether anything changed.
+const sanitizeReasoningFields = (
+  msg: Record<string, unknown>,
+): [Record<string, unknown>, boolean] => {
+  const overlay: Record<string, unknown> = {};
+  let changed = false;
+  for (const key of ['reasoning', 'reasoning_content']) {
+    const val = msg[key];
+    if (typeof val === 'string') {
+      const sanitized = sanitizeText(val);
+      if (sanitized !== val) {
+        overlay[key] = sanitized;
+        changed = true;
+      }
+    }
+  }
+  return [overlay, changed];
+};
+
 const sanitizeOutboundBody = (body: ChatRequestBody): ChatRequestBody => {
   const items = Array.isArray(body.messages) ? body.messages : [];
   let newMessages: OpenAIMessage[] | null = null;
@@ -697,21 +780,47 @@ const sanitizeOutboundBody = (body: ChatRequestBody): ChatRequestBody => {
     const role = String(msg.role ?? '')
       .trim()
       .toLowerCase();
+    const msgRecord = msg as Record<string, unknown>;
+
     const [content, contentChanged] = sanitizeContentCopy(msg.content);
+
+    const newToolCalls = Array.isArray(msgRecord.tool_calls)
+      ? sanitizeToolCalls(msgRecord.tool_calls)
+      : null;
+    const toolCallsChanged = newToolCalls !== null;
+
+    const [reasoningOverlay, reasoningChanged] = sanitizeReasoningFields(msgRecord);
+
+    const anyChanged = contentChanged || toolCallsChanged || reasoningChanged;
+
     if (role === 'developer') {
       if (newMessages === null) newMessages = [...items];
       newMessages[idx] = {
         ...msg,
         role: 'system',
         ...(contentChanged ? { content } : {}),
+        ...(toolCallsChanged ? { tool_calls: newToolCalls as unknown[] } : {}),
+        ...(reasoningChanged ? reasoningOverlay : {}),
       };
-    } else if (contentChanged) {
+    } else if (anyChanged) {
       if (newMessages === null) newMessages = [...items];
-      newMessages[idx] = { ...msg, content };
+      newMessages[idx] = {
+        ...msg,
+        ...(contentChanged ? { content } : {}),
+        ...(toolCallsChanged ? { tool_calls: newToolCalls as unknown[] } : {}),
+        ...(reasoningChanged ? reasoningOverlay : {}),
+      };
     }
   }
 
-  const out = newMessages !== null ? { ...body, messages: newMessages } : body;
+  let out = newMessages !== null ? { ...body, messages: newMessages } : body;
+
+  // Sanitize body-level tool definitions (function description/name).
+  if (Array.isArray(body.tools)) {
+    const newTools = sanitizeToolDefs(body.tools);
+    if (newTools !== null) out = { ...out, tools: newTools };
+  }
+
   return normalizeToolChoiceOut(out);
 };
 
