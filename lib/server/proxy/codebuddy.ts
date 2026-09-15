@@ -2740,6 +2740,7 @@ export const proxyChatCompletions = async (
         headers: upstreamHeaders,
         body: JSON.stringify(responsesBody),
         cache: 'no-store',
+        signal: AbortSignal.timeout(60_000),
       });
       upstreamResponse = enqueueUpstreamResponseSnapshot(
         debugTrace,
@@ -2747,7 +2748,13 @@ export const proxyChatCompletions = async (
       );
 
       if (!upstreamResponse.ok) {
-        const detail = await upstreamResponse.text();
+        let detail: string;
+        try {
+          detail = await upstreamResponse.text();
+        } catch {
+          detail =
+            `[unreadable upstream body, status=${upstreamResponse.status}]`;
+        }
         logUpstreamFailure({
           detail,
           route: usageRoute,
@@ -2826,6 +2833,7 @@ export const proxyChatCompletions = async (
       headers: upstreamHeaders,
       body: JSON.stringify(upstreamBody),
       cache: 'no-store',
+      signal: AbortSignal.timeout(60_000),
     });
 
     upstreamResponse = enqueueUpstreamResponseSnapshot(
@@ -2834,7 +2842,12 @@ export const proxyChatCompletions = async (
     );
 
     if (!upstreamResponse.ok) {
-      const detail = await upstreamResponse.text();
+      let detail: string;
+      try {
+        detail = await upstreamResponse.text();
+      } catch {
+        detail = `[unreadable upstream body, status=${upstreamResponse.status}]`;
+      }
       logUpstreamFailure({
         detail,
         route: '/v1/chat/completions',
@@ -2953,6 +2966,7 @@ export const proxyResponsesUpstream = async (
       headers: upstreamHeaders,
       body: JSON.stringify(upstreamBody),
       cache: 'no-store',
+      signal: AbortSignal.timeout(60_000),
     });
 
     upstreamResponse = enqueueUpstreamResponseSnapshot(
@@ -2961,7 +2975,12 @@ export const proxyResponsesUpstream = async (
     );
 
     if (!upstreamResponse.ok) {
-      const detail = await upstreamResponse.text();
+      let detail: string;
+      try {
+        detail = await upstreamResponse.text();
+      } catch {
+        detail = `[unreadable upstream body, status=${upstreamResponse.status}]`;
+      }
       logUpstreamFailure({
         detail,
         route: '/v1/responses',

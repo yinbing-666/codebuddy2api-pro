@@ -8,6 +8,7 @@ import {
 } from '@/lib/i18n/routing';
 import { resolvedThemeCookieName, themeCookieName } from '@/lib/theme';
 import { getJsonBody } from '@/lib/server/shared/http';
+import { getAdminSessionErrorResponse } from '@/lib/server/admin/session';
 
 const maxAge = 60 * 60 * 24 * 365;
 
@@ -29,6 +30,12 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export const POST = async (request: Request): Promise<Response> => {
+  const authError = await getAdminSessionErrorResponse(request);
+
+  if (authError) {
+    return authError;
+  }
+
   const body = await getJsonBody<{
     localePreference?: unknown;
     resolvedTheme?: unknown;

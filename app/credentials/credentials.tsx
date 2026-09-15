@@ -230,6 +230,37 @@ const Credentials = () => {
   const credentialsText = useTranslations('Admin');
   const common = useTranslations('Admin.common');
   const [showManualCredential, setShowManualCredential] = useState(false);
+  const [addError, setAddError] = useState<string | null>(null);
+  const [userIdError, setUserIdError] = useState<string | null>(null);
+
+  const handleAddCredential = () => {
+    const trimmed = credentials.form.bearerToken.trim();
+    if (!trimmed) {
+      setAddError(credentialsText('credentials.manualCredentialTokenRequired'));
+      return;
+    }
+    if (trimmed.length < 20 || trimmed.length > 5000) {
+      setAddError(
+        credentialsText('credentials.manualCredentialTokenLength', {
+          min: 20,
+          max: 5000,
+        }),
+      );
+      return;
+    }
+    setAddError(null);
+
+    const trimmedUserId = credentials.form.userId.trim();
+    setUserIdError(null);
+    if (trimmedUserId && trimmedUserId.length > 200) {
+      setUserIdError(
+        credentialsText('credentials.manualCredentialUserIdTooLong'),
+      );
+      return;
+    }
+
+    onAddCredential();
+  };
   const {
     auth,
     credentials,
@@ -435,9 +466,13 @@ const Credentials = () => {
                 'credentials.manualCredentialPlaceholder',
               )}
               rows={3}
+              status={addError ? 'error' : undefined}
               value={credentials.form.bearerToken}
               onChange={(event) => onCredentialTokenChange(event.target.value)}
             />
+            {addError ? (
+              <p className="mt-1 text-sm text-error">{addError}</p>
+            ) : null}
           </div>
           <div className="mb-4">
             <label
@@ -452,10 +487,14 @@ const Credentials = () => {
               placeholder={credentialsText(
                 'credentials.credentialUserIdPlaceholder',
               )}
+              status={userIdError ? 'error' : undefined}
               type="text"
               value={credentials.form.userId}
               onChange={(event) => onCredentialUserIdChange(event.target.value)}
             />
+            {userIdError ? (
+              <p className="mt-1 text-sm text-error">{userIdError}</p>
+            ) : null}
           </div>
           <div className="mb-4 grid gap-3">
             <label className="flex flex-col gap-1 text-sm text-secondary">
@@ -510,7 +549,7 @@ const Credentials = () => {
             />
           </div>
           <Flexbox horizontal>
-            <Button icon={Save} onClick={onAddCredential} type="primary">
+            <Button icon={Save} onClick={handleAddCredential} type="primary">
               {credentialsText('credentials.save')}
             </Button>
           </Flexbox>
