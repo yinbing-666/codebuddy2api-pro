@@ -1,4 +1,4 @@
-import { AdminPage } from '@/app/page';
+import { AdminPage } from '@/app/components/AdminPage';
 
 import ApiTest from './api-test';
 
