@@ -35,6 +35,12 @@ describe('auto-checkin domain', () => {
   it('identifies domestic and international credentials correctly', () => {
     expect(isDomesticCredential(domesticCred as never)).toBe(true);
     expect(isDomesticCredential(intlCred as never)).toBe(false);
+    expect(
+      isDomesticCredential({ filename: 'empty.json', data: {} } as never),
+    ).toBe(false);
+    expect(
+      isDomesticCredential({ filename: 'none.json', data: { domain: '' } } as never),
+    ).toBe(false);
   });
 
   it('runs checkin only for domestic credentials and skips international', async () => {

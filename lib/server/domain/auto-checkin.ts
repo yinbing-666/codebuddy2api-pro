@@ -9,11 +9,15 @@ const globalAutoCheckinState = globalThis as typeof globalThis & {
   __codebuddy2apiAutoCheckinInitialized__?: boolean;
 };
 
-// 检查凭据是否属于国内版（非 international / 非 workbuddy.ai）
+// 检查凭据是否属于明确的国内版（必须有 domain 且非 international / 非 workbuddy.ai，宁可少签不可错签）
 export const isDomesticCredential = (credential: CredentialRecord): boolean => {
   const domain = String(credential.data.domain ?? '')
     .trim()
     .toLowerCase();
+  // 若未显式设置 domain，根据 CodeBuddy2API 惯例默认缺省为 copilot.tencent.com
+  if (!domain) {
+    return false;
+  }
   return !domain.endsWith('workbuddy.ai');
 };
 
