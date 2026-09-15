@@ -1,6 +1,7 @@
 import {
   createAccessKey,
   listAccessKeys,
+  validateCredentialFilenames,
 } from '@/lib/server/domain/access-keys';
 import { getAdminSessionErrorResponse } from '@/lib/server/admin/session';
 import { listCredentialFilenames } from '@/lib/server/domain/credentials';
@@ -8,27 +9,6 @@ import { getJsonBody } from '@/lib/server/shared/http';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-
-const validateCredentialFilenames = (
-  credentialFilenames: unknown,
-  availableFilenames: string[],
-): string[] => {
-  if (!Array.isArray(credentialFilenames)) {
-    throw new Error('credential_filenames must be an array');
-  }
-
-  const available = new Set(availableFilenames);
-  const normalized = credentialFilenames
-    .filter((item): item is string => typeof item === 'string')
-    .map((item) => item.trim())
-    .filter(Boolean);
-
-  if (normalized.some((item) => !available.has(item))) {
-    throw new Error('Selected credentials must exist');
-  }
-
-  return normalized;
-};
 
 export const GET = async (request: Request): Promise<Response> => {
   const authError = await getAdminSessionErrorResponse(request);

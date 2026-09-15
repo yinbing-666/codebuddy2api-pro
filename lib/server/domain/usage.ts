@@ -19,6 +19,21 @@ import {
 export type UsageRange =
   '1h' | '3h' | '6h' | '12h' | '24h' | '3d' | '7d' | 'today' | 'yesterday';
 
+const USAGE_RANGES: readonly string[] = [
+  '1h',
+  '3h',
+  '6h',
+  '12h',
+  '24h',
+  '3d',
+  '7d',
+  'today',
+  'yesterday',
+];
+
+export const isUsageRange = (value: unknown): value is UsageRange =>
+  typeof value === 'string' && USAGE_RANGES.includes(value);
+
 export interface UsageSnapshot {
   cache_creation_input_tokens?: number | null;
   cache_read_input_tokens?: number | null;

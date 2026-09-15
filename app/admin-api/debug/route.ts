@@ -65,15 +65,60 @@ export const POST = async (request: Request): Promise<Response> => {
   }
 
   const body = await getJsonBody<{
+    autoRefreshSeconds?: unknown;
+    enabled?: unknown;
+    maxEntries?: unknown;
+  }>(request);
+
+  const nextSettings: {
     autoRefreshSeconds?: number;
     enabled?: boolean;
     maxEntries?: number;
-  }>(request);
-  const settings = await updateDebugSettings({
-    autoRefreshSeconds: body.autoRefreshSeconds,
-    enabled: body.enabled,
-    maxEntries: body.maxEntries,
-  });
+  } = {};
+
+  if (body.autoRefreshSeconds !== undefined) {
+    if (
+      typeof body.autoRefreshSeconds !== 'number' ||
+      !Number.isFinite(body.autoRefreshSeconds)
+    ) {
+      return Response.json(
+        { error: 'autoRefreshSeconds must be a number' },
+        { status: 400 },
+      );
+    }
+    nextSettings.autoRefreshSeconds = Math.min(
+      3600,
+      Math.max(5, Math.round(body.autoRefreshSeconds)),
+    );
+  }
+
+  if (body.maxEntries !== undefined) {
+    if (
+      typeof body.maxEntries !== 'number' ||
+      !Number.isFinite(body.maxEntries)
+    ) {
+      return Response.json(
+        { error: 'maxEntries must be a number' },
+        { status: 400 },
+      );
+    }
+    nextSettings.maxEntries = Math.min(
+      5000,
+      Math.max(10, Math.round(body.maxEntries)),
+    );
+  }
+
+  if (body.enabled !== undefined) {
+    if (typeof body.enabled !== 'boolean') {
+      return Response.json(
+        { error: 'enabled must be a boolean' },
+        { status: 400 },
+      );
+    }
+    nextSettings.enabled = body.enabled;
+  }
+
+  const settings = await updateDebugSettings(nextSettings);
 
   return Response.json({
     autoRefreshSeconds: settings.autoRefreshSeconds,
