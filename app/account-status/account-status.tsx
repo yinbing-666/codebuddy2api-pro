@@ -122,11 +122,16 @@ const QuotaProgress = ({
 
 const CopyableModel = ({ model }: { model: string }) => {
   const [copied, setCopied] = useState(false);
+  const [copyFailed, setCopyFailed] = useState(false);
   const text = useTranslations('Admin');
+  const dismiss = (setter: (value: boolean) => void) => {
+    setter(true);
+    window.setTimeout(() => setter(false), 1400);
+  };
   const copy = async () => {
     try {
       let copiedWithModernApi = false;
-      if (navigator.clipboard) {
+      if (navigator.clipboard?.writeText) {
         try {
           await navigator.clipboard.writeText(model);
           copiedWithModernApi = true;
@@ -144,16 +149,27 @@ const CopyableModel = ({ model }: { model: string }) => {
         fallback.select();
         const copiedWithFallback = document.execCommand('copy');
         fallback.remove();
-        if (!copiedWithFallback) return;
+        if (!copiedWithFallback) {
+          dismiss(setCopyFailed);
+          return;
+        }
       }
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1200);
     } catch {
-      return;
+      dismiss(setCopyFailed);
     }
   };
   return (
-    <Tooltip title={copied ? text('common.copy') : text('common.copy')}>
+    <Tooltip
+      title={
+        copied
+          ? text('common.copySuccess')
+          : copyFailed
+            ? text('common.copyFail')
+            : text('common.copy')
+      }
+    >
       <Tag onClick={() => void copy()}>
         <Flexbox align="center" gap={4} horizontal>
           {copied ? <Check size={12} /> : <Copy size={12} />}
@@ -311,8 +327,12 @@ const AccountStatus = ({
   const [busy, setBusy] = useState<Record<string, string>>({});
   const [page, setPage] = useState(1);
   const [batchBusy, setBatchBusy] = useState<string | null>(null);
+  const [batchError, setBatchError] = useState<string | null>(null);
   const loadOne = useCallback(
-    async (filename: string, action: 'refresh' | 'checkin' = 'refresh') => {
+    async (
+      filename: string,
+      action: 'refresh' | 'checkin' = 'refresh',
+    ): Promise<boolean> => {
       setBusy((current) => ({ ...current, [filename]: action }));
       try {
         const response = await fetch('/admin-api/account-status', {
@@ -328,8 +348,11 @@ const AccountStatus = ({
           statuses?: AccountStatusSnapshot[];
         };
         const snapshot = payload.status ?? payload.statuses?.[0];
-        if (snapshot)
+        if (snapshot) {
           setSnapshots((current) => ({ ...current, [filename]: snapshot }));
+          return !snapshot.error;
+        }
+        return false;
       } catch (error) {
         setSnapshots((current) => ({
           ...current,
@@ -341,6 +364,7 @@ const AccountStatus = ({
                 : 'Account status query failed',
           },
         }));
+        return false;
       } finally {
         setBusy((current) => {
           const next = { ...current };
@@ -353,22 +377,41 @@ const AccountStatus = ({
   );
   const loadAll = useCallback(
     async (action: 'refresh' | 'checkin') => {
+      const targets = credentials.filter((credential) => {
+        if (credential.is_expired) return false;
+        if (action !== 'checkin') return true;
+        return snapshots[credential.filename]?.checkin.claimed !== true;
+      });
+      if (!targets.length) return;
       setBatchBusy(action);
+      setBatchError(null);
       try {
+        const filenames = targets.map((credential) => credential.filename);
+        const poolSize = Math.min(8, Math.max(5, filenames.length));
+        const failed: string[] = [];
+        let index = 0;
+        const worker = async () => {
+          while (index < filenames.length) {
+            const current = filenames[index++];
+            const ok = await loadOne(current, action);
+            if (!ok) failed.push(current);
+          }
+        };
         await Promise.all(
-          credentials
-            .filter((credential) => {
-              if (credential.is_expired) return false;
-              if (action !== 'checkin') return true;
-              return snapshots[credential.filename]?.checkin.claimed !== true;
-            })
-            .map((credential) => loadOne(credential.filename, action)),
+          Array.from({ length: poolSize }, () => worker()),
         );
+        if (failed.length) {
+          setBatchError(
+            `${text('accountStatus.loadAllError')} ${failed.length} ${
+              text('accountStatus.loadAllFailedCount')
+            }`,
+          );
+        }
       } finally {
         setBatchBusy(null);
       }
     },
-    [credentials, loadOne, snapshots],
+    [credentials, loadOne, snapshots, text],
   );
   const pageCredentials = useMemo(
     () =>
@@ -404,6 +447,19 @@ const AccountStatus = ({
           </Button>
         </Flexbox>
       </Flexbox>
+      {batchError ? (
+        <Alert
+          action={
+            <Button size="small" type="text" onClick={() => setBatchError(null)}>
+              {text('common.dismiss')}
+            </Button>
+          }
+          closable
+          onClose={() => setBatchError(null)}
+          title={batchError}
+          type="error"
+        />
+      ) : null}
       {credentials.length ? (
         pageCredentials.map((credential) => {
           const snapshot = snapshots[credential.filename];

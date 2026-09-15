@@ -26,6 +26,15 @@ import { CredentialGroup } from './credential-group';
 import { SectionTitle } from './section-title';
 import { ToggleOption } from './toggle-option';
 
+// Stable, unique temporary id for the in-progress "create AccessKey" card.
+// The card is only rendered while the create editor is open; this id is not
+// persisted, sent to the API, or used as a backend key. Randomised once at
+// module load so it is both unique and stable across renders.
+const accessKeyCreateTempId =
+  typeof crypto !== 'undefined' && 'randomUUID' in crypto
+    ? crypto.randomUUID()
+    : `__temp-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
 export interface CredentialSummary {
   created_at: number | null;
   domain: string;
@@ -574,12 +583,12 @@ const Credentials = () => {
         {credentials.accessKeyCreating ? (
           <AccessKeyCard
             accessKey={{
-              createdAt: new Date().toISOString(),
+              createdAt: '',
               credentialFilenames: [],
-              id: '__new__',
+              id: accessKeyCreateTempId,
               maskedSecret: '',
               name: credentialsText('credentials.accessKeyCreateTitle'),
-              updatedAt: new Date().toISOString(),
+              updatedAt: '',
             }}
             actionId={credentials.accessKeyActionId}
             form={credentials.accessKeyForm}

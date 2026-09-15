@@ -17,7 +17,27 @@ import { parseThemeMode, themeCookieName } from '@/lib/theme';
 
 export const dynamic = 'force-dynamic';
 
-const LoginPage = async () => {
+interface LoginPageProps {
+  searchParams: Promise<{
+    redirect?: string;
+  }>;
+}
+
+const ALLOWED_PROTOCOLS = ['http', 'https'];
+
+const HOST_PATTERN = /^(localhost|(\d{1,3}\.){3}\d{1,3}|([a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z]{2,})(:\d+)?$/;
+
+const isSameSiteRedirect = (
+  value: string | undefined,
+): value is string => {
+  if (!value) {
+    return false;
+  }
+
+  return value.startsWith('/') && !value.startsWith('//');
+};
+
+const LoginPage = async ({ searchParams }: LoginPageProps) => {
   const headerStore = await headers();
   const cookieStore = await cookies();
   const localePreference = parseLocalePreference(
@@ -29,11 +49,15 @@ const LoginPage = async () => {
       ? (headerStore.get('accept-language') ?? undefined)
       : localePreference,
   );
-  const protocol = headerStore.get('x-forwarded-proto') ?? 'http';
-  const host =
+  const headerProtocol = headerStore.get('x-forwarded-proto');
+  const rawHost =
     headerStore.get('x-forwarded-host') ??
     headerStore.get('host') ??
     'localhost';
+  const protocol = ALLOWED_PROTOCOLS.includes(headerProtocol ?? '')
+    ? headerProtocol
+    : 'https';
+  const host = HOST_PATTERN.test(rawHost) ? rawHost : 'localhost';
   const cookieHeader = headerStore.get('cookie') ?? '';
   const request = new Request(`${protocol}://${host}/login`, {
     headers: cookieHeader ? { cookie: cookieHeader } : {},
@@ -44,9 +68,11 @@ const LoginPage = async () => {
     namespace: 'Admin.loginPage',
   });
   const messages = getMessages(locale);
+  const { redirect: rawRedirect } = await searchParams;
+  const redirectTarget = isSameSiteRedirect(rawRedirect) ? rawRedirect : '/';
 
   if (session.authenticated) {
-    redirect('/');
+    redirect(redirectTarget);
   }
 
   return (
@@ -55,7 +81,8 @@ const LoginPage = async () => {
       initialTheme={parseThemeMode(cookieStore.get(themeCookieName)?.value)}
       locale={locale}
       localePreference={localePreference}
-      translations={messages.Admin.loginPage}
+      redirect={redirectTarget}
+      translations={messages?.Admin?.loginPage ?? {}}
     />
   );
 };

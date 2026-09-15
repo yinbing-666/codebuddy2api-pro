@@ -5,7 +5,10 @@
       "copy": "コピー",
       "loading": "読み込み中...",
       "refresh": "更新",
-      "save": "保存"
+      "save": "保存",
+      "copySuccess": "コピーしました",
+      "copyFail": "コピー失敗",
+      "dismiss": "閉じる"
     },
     "brand": "CodeBuddy2API",
     "description": "認証情報、使用量、Debug トレース、実行時設定をまとめて管理します。",
@@ -53,7 +56,9 @@
       "checkinAll": "すべてチェックイン",
       "empty": "認証情報がありません",
       "quotaUnknown": "使用量不明",
-      "quotaUsed": "残り容量 {percent}%"
+      "quotaUsed": "残り容量 {percent}%",
+      "loadAllError": "一部のアカウントが失敗しました",
+      "loadAllFailedCount": "アカウント"
     },
     "dashboard": {
       "welcomeTitle": "トークンをぶん回す準備はできた？",

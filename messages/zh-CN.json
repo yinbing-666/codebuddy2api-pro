@@ -5,7 +5,10 @@
       "copy": "复制",
       "loading": "加载中...",
       "refresh": "刷新",
-      "save": "保存"
+      "save": "保存",
+      "copySuccess": "已复制",
+      "copyFail": "复制失败",
+      "dismiss": "关闭"
     },
     "brand": "CodeBuddy2API",
     "description": "统一管理凭证、用量、Debug 追踪与运行时设置。",
@@ -53,7 +56,9 @@
       "checkinAll": "全部签到",
       "empty": "暂无凭据",
       "quotaUnknown": "额度未知",
-      "quotaUsed": "剩余额度 {percent}%"
+      "quotaUsed": "剩余额度 {percent}%",
+      "loadAllError": "部分账号操作失败",
+      "loadAllFailedCount": "个账号"
     },
     "dashboard": {
       "welcomeTitle": "做好蹬的准备了吗？",

@@ -5,7 +5,10 @@
       "copy": "Copy",
       "loading": "Loading...",
       "refresh": "Refresh",
-      "save": "Save"
+      "save": "Save",
+      "copySuccess": "Copied",
+      "copyFail": "Copy failed",
+      "dismiss": "Dismiss"
     },
     "brand": "CodeBuddy2API",
     "description": "Manage credentials, usage, debug traces, and runtime settings in one place.",
@@ -53,7 +56,9 @@
       "checkinAll": "Check in all",
       "empty": "No credentials",
       "quotaUnknown": "Unknown quota",
-      "quotaUsed": "{percent}% quota remaining"
+      "quotaUsed": "{percent}% quota remaining",
+      "loadAllError": "Some accounts failed",
+      "loadAllFailedCount": "account(s)"
     },
     "dashboard": {
       "welcomeTitle": "Ready to crank through some tokens?",

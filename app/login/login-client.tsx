@@ -52,6 +52,7 @@ interface LoginClientProps {
   initialSession: SessionSummary;
   locale: string;
   localePreference?: LocalePreference;
+  redirect?: string;
   translations: Omit<AdminLoginMessages, 'usernameLabel'> & {
     usernameLabel?: string;
   };
@@ -66,6 +67,7 @@ const LoginClient = ({
   initialTheme = 'system',
   locale,
   localePreference = parseLocalePreference(locale),
+  redirect: redirectTarget = '/',
   translations,
 }: LoginClientProps) => {
   const [session, setSession] = useState(initialSession);
@@ -115,13 +117,16 @@ const LoginClient = ({
     void saveThemePreference(nextTheme, isDark ? 'dark' : 'light');
   };
 
-  const applySuccess = useCallback((nextSession?: SessionSummary) => {
-    if (nextSession) {
-      setSession(nextSession);
-    }
+  const applySuccess = useCallback(
+    (nextSession?: SessionSummary) => {
+      if (nextSession) {
+        setSession(nextSession);
+      }
 
-    window.location.assign('/');
-  }, []);
+      window.location.assign(redirectTarget);
+    },
+    [redirectTarget],
+  );
 
   const submitPassword = async () => {
     const endpoint =
