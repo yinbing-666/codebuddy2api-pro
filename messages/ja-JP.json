@@ -43,7 +43,7 @@
       "checkedIn": "本日はチェックイン済み",
       "notCheckedIn": "本日は未チェックイン",
       "checkinAction": "チェックイン",
-      "notSupported": "不要（国際版）",
+      "notSupported": "不要（国際版/未識別）",
       "models": "利用可能なモデル",
       "showModels": "すべて表示（{count}）",
       "modelCount": "モデル（{count}）",

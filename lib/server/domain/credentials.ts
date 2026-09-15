@@ -42,6 +42,34 @@ export interface CredentialRecord {
   filename: string;
 }
 
+// ---- 凭据版本判定（国内版 / 国际版）----
+
+// 取凭据 domain，统一归一化（空值返回 undefined）
+export const getCredentialDomain = (
+  credential: Pick<CredentialRecord, 'data'>,
+): string | undefined => {
+  const domain = String(credential.data.domain ?? '')
+    .trim()
+    .toLowerCase();
+  return domain.length > 0 ? domain : undefined;
+};
+
+// 是否国际版（workbuddy.ai）
+export const isInternationalCredential = (
+  credential: Pick<CredentialRecord, 'data'>,
+): boolean => {
+  return getCredentialDomain(credential)?.endsWith('workbuddy.ai') ?? false;
+};
+
+// 是否国内版：明确非国际版 且 domain 非空（空 domain 视为未知，不签）
+export const isDomesticCredential = (
+  credential: Pick<CredentialRecord, 'data'>,
+): boolean => {
+  const domain = getCredentialDomain(credential);
+  if (!domain) return false;
+  return !domain.endsWith('workbuddy.ai');
+};
+
 interface ManagerState {
   globalNextFilename: string | null;
   keyNextFilenameByAccessKeyId: Record<string, string | null>;

@@ -4,6 +4,7 @@ import {
   listEligibleCredentialRecords,
   type CredentialRecord,
 } from './credentials';
+import { isDomesticCredential } from './credentials';
 import { getModelsForCredential } from '../proxy/codebuddy';
 
 export interface AccountStatusSnapshot {
@@ -307,11 +308,8 @@ export const checkinAccount = async (
   const credential = (await listEligibleCredentialRecords([filename]))[0];
   if (!credential) throw new Error('Credential is unavailable');
 
-  const domain = String(credential.data.domain ?? '')
-    .trim()
-    .toLowerCase();
-  // 国际版（workbuddy.ai）无需签到，直接返回状态
-  if (domain.endsWith('workbuddy.ai')) {
+  // 国际版（workbuddy.ai）无需签到，直接返回状态；空 domain 视为未知也跳过
+  if (!isDomesticCredential(credential)) {
     return loadAccountStatus(credential);
   }
 
@@ -334,13 +332,10 @@ export const checkinAccounts = async (
   filenames?: string[],
 ): Promise<AccountStatusSnapshot[]> => {
   const credentials = await listEligibleCredentialRecords(filenames);
-  // 过滤出国内版账号进行签到，国际版跳过
-  const domesticCredentials = credentials.filter((credential) => {
-    const domain = String(credential.data.domain ?? '')
-      .trim()
-      .toLowerCase();
-    return !domain.endsWith('workbuddy.ai');
-  });
+  // 只对国内版账号签到：国际版与空 domain 未知账号跳过
+  const domesticCredentials = credentials.filter((credential) =>
+    isDomesticCredential(credential),
+  );
 
   const results: AccountStatusSnapshot[] = [];
   for (let index = 0; index < domesticCredentials.length; index += 4) {

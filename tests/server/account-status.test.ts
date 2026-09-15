@@ -3,10 +3,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('@/lib/server/domain/config', () => ({
   getCodeBuddyApiEndpoint: vi.fn(),
 }));
-vi.mock('@/lib/server/domain/credentials', () => ({
-  listCredentials: vi.fn(),
-  listEligibleCredentialRecords: vi.fn(),
-}));
+vi.mock('@/lib/server/domain/credentials', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/server/domain/credentials')>();
+  return {
+    ...actual,
+    listCredentials: vi.fn(),
+    listEligibleCredentialRecords: vi.fn(),
+  };
+});
 vi.mock('@/lib/server/proxy/codebuddy', () => ({
   getModelsForCredential: vi.fn(),
 }));
@@ -23,7 +27,7 @@ const {
 } = await import('@/lib/server/domain/account-status');
 
 const credential = (filename: string) => ({
-  data: { bearer_token: `token-${filename}` },
+  data: { bearer_token: `token-${filename}`, domain: 'copilot.tencent.com' },
   filePath: `/tmp/${filename}`,
   filename,
 });
