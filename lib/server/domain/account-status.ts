@@ -306,6 +306,15 @@ export const checkinAccount = async (
 ): Promise<AccountStatusSnapshot> => {
   const credential = (await listEligibleCredentialRecords([filename]))[0];
   if (!credential) throw new Error('Credential is unavailable');
+
+  const domain = String(credential.data.domain ?? '')
+    .trim()
+    .toLowerCase();
+  // 国际版（workbuddy.ai）无需签到，直接返回状态
+  if (domain.endsWith('workbuddy.ai')) {
+    return loadAccountStatus(credential);
+  }
+
   try {
     await fetchJson(credential, '/v2/billing/meter/daily-checkin', 'POST', {});
   } catch (error) {
@@ -325,9 +334,17 @@ export const checkinAccounts = async (
   filenames?: string[],
 ): Promise<AccountStatusSnapshot[]> => {
   const credentials = await listEligibleCredentialRecords(filenames);
+  // 过滤出国内版账号进行签到，国际版跳过
+  const domesticCredentials = credentials.filter((credential) => {
+    const domain = String(credential.data.domain ?? '')
+      .trim()
+      .toLowerCase();
+    return !domain.endsWith('workbuddy.ai');
+  });
+
   const results: AccountStatusSnapshot[] = [];
-  for (let index = 0; index < credentials.length; index += 4) {
-    const chunk = credentials.slice(index, index + 4);
+  for (let index = 0; index < domesticCredentials.length; index += 4) {
+    const chunk = domesticCredentials.slice(index, index + 4);
     results.push(
       ...(await Promise.all(
         chunk.map((credential) => checkinAccount(credential.filename)),

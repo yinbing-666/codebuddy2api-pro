@@ -3,6 +3,9 @@ export const register = async (): Promise<void> => {
 
   const { refreshMissingCredentialModels } =
     await import('@/lib/server/domain/credential-models');
+  const { initDomesticAutoCheckinScheduler } =
+    await import('@/lib/server/domain/auto-checkin');
 
   void refreshMissingCredentialModels();
+  initDomesticAutoCheckinScheduler();
 };

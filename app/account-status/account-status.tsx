@@ -189,6 +189,11 @@ const AccountStatusCard = ({
 }) => {
   const text = useTranslations('Admin');
   const quotaUnknown = text('accountStatus.quotaUnknown');
+  const isInternational = String(credential.domain ?? '')
+    .trim()
+    .toLowerCase()
+    .endsWith('workbuddy.ai');
+
   return (
     <Block
       className={
@@ -257,14 +262,16 @@ const AccountStatusCard = ({
       >
         <Text className="account-status-card-checkin-label" type="secondary">
           {text('accountStatus.checkin')}:{' '}
-          {snapshot.checkin.claimed === true
-            ? text('accountStatus.checkedIn')
-            : snapshot.checkin.claimed === false
-              ? text('accountStatus.notCheckedIn')
-              : '—'}
+          {isInternational
+            ? text('accountStatus.notSupported')
+            : snapshot.checkin.claimed === true
+              ? text('accountStatus.checkedIn')
+              : snapshot.checkin.claimed === false
+                ? text('accountStatus.notCheckedIn')
+                : '—'}
         </Text>
         <Button
-          disabled={Boolean(busy) || snapshot.checkin.claimed === true}
+          disabled={Boolean(busy) || isInternational || snapshot.checkin.claimed === true}
           loading={busy === 'checkin'}
           onClick={onCheckin}
         >

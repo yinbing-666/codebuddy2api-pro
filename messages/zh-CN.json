@@ -43,6 +43,7 @@
       "checkedIn": "今日已签到",
       "notCheckedIn": "今日未签到",
       "checkinAction": "签到",
+      "notSupported": "无需签到（国际版）",
       "models": "可用模型",
       "showModels": "展开全部（{count} 个）",
       "modelCount": "模型（{count} 个）",

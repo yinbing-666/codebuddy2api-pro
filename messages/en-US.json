@@ -43,6 +43,7 @@
       "checkedIn": "Checked in today",
       "notCheckedIn": "Not checked in today",
       "checkinAction": "Check in",
+      "notSupported": "Not required (International)",
       "models": "Available models",
       "showModels": "Show all ({count})",
       "modelCount": "Models ({count})",
